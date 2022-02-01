@@ -37,7 +37,7 @@ def bisect_(f, a, b, i_max, tol):
 
         # check for convergence
         if abs(yc) < tol:
-            print(f"Bisect method convergent after {i} steps")
+            print(f"Bisect method convergent after {i+1} steps")
             break
 
         if sign(ya) == sign(yc):
@@ -89,7 +89,7 @@ def rfalsi(f, a, b, i_max, tol):
         
         # Sprawdzenie zbieżności
         if abs(yc) < tol:
-            print(f"Regula falsi method convergent after {i} steps")
+            print(f"Regula falsi method convergent after {i+1} steps")
             break
 
         if sign(ya) == sign(yc):
@@ -132,12 +132,12 @@ def secant(f, xn0, xn1, i_max, tol):
        
         yn2 = f(xn2)
 
-        df = df.append(pd.Series(data={"Krok": i + 1, "x_n": xn0, "x_n+1": xn1, "x_n+2": xn2, "f(x_n+2)": yn2}), 
+        df = df.append(pd.Series(data={"Step": i + 1, "x_n": xn0, "x_n+1": xn1, "x_n+2": xn2, "f(x_n+2)": yn2}), 
                                  ignore_index=True)
         
         # check for convergence
         if abs(yn2) < tol:
-            print(f"Secant method convergent after {i} steps")
+            print(f"Secant method convergent after {i+1} steps")
             break
 
         xn0, yn0 = xn1, yn1
@@ -153,13 +153,13 @@ def secant(f, xn0, xn1, i_max, tol):
     return xn2, yn2, df
 
 
-def brent(f, a, b, t):
+def brent(f, a, b, tol):
     """
-    :param fun: function
-    :param a: beginning of interval
-    :param b: end of interval
-    :param t: tolerance
-    :return: (przybliżona wartość pierwiastka, wartość funkcji od przybliżenia, liczba iteracji)
+    :param f: function
+    :param a: beginning of the interval
+    :param b: end of the interval
+    :param tol: tolerance
+    :return: (approximation of the root, function value of root approximation, number of iterations)
     """
     eps = np.finfo(float).eps
 
@@ -177,7 +177,7 @@ def brent(f, a, b, t):
             b, c = c, b
             fb, fc = fc, fb
         
-        tol = 2 * abs(b) * eps + t
+        tol = 2 * abs(b) * eps + tol
         m = 0.5 * (c - b)
 
         if abs(m) > tol and fb != 0:
@@ -227,7 +227,7 @@ def brent(f, a, b, t):
     return b, f(b), i
 
 
-def newton(f, df, xn0, i_max, tol):
+def newton(f, dfun, xn0, i_max, tol):
     """
     :param f: function
     :param df: derivative of a function f
@@ -240,28 +240,27 @@ def newton(f, df, xn0, i_max, tol):
     if i_max < 1:
         raise ValueError("i_max must be greater than 0")
 
-    df_ = pd.DataFrame(columns=["Step", "x_n", "x_n+1", "f(x_n+1)"])
+    df = pd.DataFrame(columns=["Step", "x_n", "x_n+1", "f(x_n+1)"])
     
     for i in range(i_max):
-        xn1 = xn0 - f(xn0) / df(xn0)
+        xn1 = xn0 - f(xn0) / dfun(xn0)
         yn1 = f(xn1)
 
-        df_ = df_.append(pd.Series(data={"Step": i + 1, "x_n": xn0, "x_n+1": xn1, "f(x_n+1)": yn1}), 
+        df = df.append(pd.Series(data={"Step": i + 1, "x_n": xn0, "x_n+1": xn1, "f(x_n+1)": yn1}), 
                                  ignore_index=True)
 
         if abs(yn1) < tol:
-            print(f"Newton method convergent after {i} steps")
+            print(f"Newton's method convergent after {i+1} steps")
             break
 
         xn0 = xn1
     else:
         raise StopIteration("Function couldn't find approximation of root with given tolerance")
 
-    df_ = df_.astype({"Step": "int64"})
-    df_ = df_.set_index("Step")
+    df = df.astype({"Step": "int64"})
+    df = df.set_index("Step")
         
-    return xn1, yn1, df_
-
+    return xn1, yn1, df
 
 
 def newton_nles(fun: np.array, jacobian: np.array, X,  i_max, tol):
@@ -275,9 +274,9 @@ def newton_nles(fun: np.array, jacobian: np.array, X,  i_max, tol):
     """
     
     if i_max < 1:
-        raise ValueError("i_max musi być większe od 0")
+        raise ValueError("i_max must be greater than 0")
     
-    df = pd.DataFrame(columns=["Krok", "X_n", "dX_n", "f(X_n)"])
+    df = pd.DataFrame(columns=["Step", "X_n", "dX_n", "f(X_n)"])
     
     for i in range(i_max):
         J = jacobian(*X) 
@@ -285,19 +284,19 @@ def newton_nles(fun: np.array, jacobian: np.array, X,  i_max, tol):
         dX = np.linalg.solve(J, Y)
         X -= dX 
 
-        df = df.append(pd.Series(data={"Krok": i + 1, "X_n": X, "dX_n": dX, "f(X_n)": Y}), 
+        df = df.append(pd.Series(data={"Step": i + 1, "X_n": X, "dX_n": dX, "f(X_n)": Y}), 
                                  ignore_index=True)
 
         if np.linalg.norm(dX) < tol:
-            print(f"Method converged after {i} steps")
+            print(f"Newton's method convergent after {i+1} steps")
             break
 
     else:
-        raise StopIteration("Function couldn't find approximation of solutin with given tolerance")
+        raise StopIteration("Function couldn't find approximation of solution with given tolerance")
 
 
-    df = df.astype({"Krok": "int64"})
-    df = df.set_index("Krok")
+    df = df.astype({"Step": "int64"})
+    df = df.set_index("Step")
         
     return X, df
 
@@ -305,34 +304,34 @@ def newton_nles(fun: np.array, jacobian: np.array, X,  i_max, tol):
 def banach_nles(g: np.array, Xn0,  i_max, tol):
     """
     :param g: mapping function
-    :param Xn0: table of X first approximations
+    :param Xn0: table of first approximations
     :param i_max: maximal number of iterations
     :param tol: tolerance
-    :return: (approximations of the roots, function values of roots aproximatons, list of results in each step)
+    :return: (approximations of the roots, list of results in each step)
     """
     
     if i_max < 1:
-        raise ValueError("i_max musi być większe od 0")
+        raise ValueError("i_max must be greater than 0")
     
-    df = pd.DataFrame(columns=["Krok", "X_n"])
+    df = pd.DataFrame(columns=["Step", "X_n"])
     
     for i in range(i_max):
         Xn1 = g(*Xn0)
 
-        row = pd.Series(data={"Krok": i + 1, "X_n": Xn1})
+        row = pd.Series(data={"Step": i + 1, "X_n": Xn1})
         df = df.append(row, ignore_index=True)
 
 
         if np.linalg.norm(Xn1-Xn0) / np.linalg.norm(Xn1) < tol:
-            print(f"Method converged after {i} steps")
+            print(f"Banach's method convergent after {i+1} steps")
             break
             
         Xn0 = Xn1
 
     else:
-        raise StopIteration("Function couldn't find approximation of solutin with given tolerance")
+        raise StopIteration("Function couldn't find approximation of solution with given tolerance")
     
-    df = df.astype({"Krok": "uint32"})
-    df = df.set_index("Krok")
+    df = df.astype({"Step": "uint32"})
+    df = df.set_index("Step")
         
     return Xn1, df
